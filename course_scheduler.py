@@ -14,12 +14,13 @@ class CourseSect(object):
     self.dates = []
     self.days = []
     self.times = []
+    self.dtdict = {}
     self.status = ""
     self.instructors = []
     self.delmeth = ""
 
   def display(self):
-    print("{} {}-{} ID: {}".format(self.subject, self.coursenum, self.section, self.courseid))
+    print("{} {}-{} ID: {} {}".format(self.subject, self.coursenum, self.section, self.courseid, self.dtdict))
 
 class Course(object):
   def __init__(self):
@@ -73,7 +74,8 @@ def make_dt_dict(sect):
       tdlist = sect.days[i].split(' ')
       for j in range(0,len(tdlist)):
           daylist.append(tdlist[j])
-          timelist.append(sect.times[i])
+          clean_times = clean_time_range(sect.times[i])
+          timelist.append(clean_times)
 
    sort_dt(daylist, timelist)
 
@@ -87,6 +89,8 @@ def make_dt_dict(sect):
        ttlist.append(timelist[i])
        i = i + 1
      dt_dict[daylist[j]] = ttlist
+
+#    print("In make_dt_dict ",dt_dict)        # DEBUG
 
    return dt_dict
        
@@ -141,22 +145,39 @@ def time_to_min(timestring):
      
 def split_time(mtimerange):
 
-  # This function takes a "messy" string time range (mtimerange) and splits it
-  #  into a start time (integer, in minutes) and end time (integer, in minutes)
-  #  It returns a 2-member integer list where the first number is the
-  #  start time and the second number is the end time.
+  # This function takes a "messy" string time range (mtimerange) in the form
+  #  "11:30am-12:30pm" and splits it into a start time (integer, in minutes) 
+  #   and end time (integer, in minutes). It returns a 2-member integer list 
+  #   where the first number is the start time and the second number is the 
+  #   end time.
 
   tlist = []
 
-  mtimerange = mtimerange.decode('utf-8')
-
-  stimelist = mtimerange.split(u'\xa0-\xa0')
+  stimelist = mtimerange.split('-')
 # print("in split_time stimelist = ",stimelist)    # DEBUG
   tlist.append(time_to_min(stimelist[0]))
   tlist.append(time_to_min(stimelist[1]))
 
   return tlist
 
+def clean_time_range(mtimerange):
+
+  # This function takes a "messy" string time range (mtimerange) that
+  # involves Latin-1 (ISO/IEC 8859-1:1998) symbols (e.g. \xa0 or \xc2\xa0
+  # for a non-breaking space) and converts it to a "clean" string in the 
+  # form "11:30am-12:20pm"
+
+  tstring = ""
+  tlist = []
+
+  mtimerange = mtimerange.decode('utf-8')
+
+  stimelist = mtimerange.split(u'\xa0-\xa0')
+  tlist.append(stimelist[0])
+  tlist.append(stimelist[1])
+  tstring = "-".join(tlist)
+
+  return tstring
 
 def compare_sect(secta,sectb):
 
@@ -165,9 +186,9 @@ def compare_sect(secta,sectb):
    # Return value will be "0" if there is no day&time conflict.
    # Return value will be "1" if there is a day&time conflict.
 
-    dt_dict_a = make_dt_dict(secta)
-    dt_dict_b = make_dt_dict(sectb)
- 
+    dt_dict_a = secta.dtdict
+    dt_dict_b = sectb.dtdict
+
     conflict = 0
 
     for day_a in dt_dict_a.keys():
@@ -204,11 +225,9 @@ def compare_times(stimesa, stimesb):
 #         print("In compare_times",timerange_a,timerange_b)    # DEBUG
           if timerange_a[0] < timerange_b[0]:
               if timerange_b[0] < timerange_a[1]:
-            # if timerange_b[0] < timerange_a[1] or timerange_b[1] <= timerange_a[1]:
                   conflict = 1
           else:
               if timerange_a[0] < timerange_b[1]:
-            # if timerange_a[0] < timerange_b[1] or timerange_a[1] <= timerange_b[1]:
                   conflict = 1
           j += 1
        i += 1
@@ -312,6 +331,8 @@ for id in range (0,len(cids)):
   course_sect.days = cdays[id].split('\n')
   course_sect.times = ctimes[id].split('\n')
   course_sect.instructors = cinstrucs[id].split('\n')
+  
+  course_sect.dtdict = make_dt_dict(course_sect)
 
 # Sort the courses by number of sections. 
 
@@ -374,8 +395,8 @@ for i in range(1,len(course_list)):
                schedule_list[j].append(sect)
             else:
                print("Error in main program: length of schedule list = ",lslistj)
-         else:
-            print("Found conflict (main program)!")
+#        else:							# DEBUG
+#           print("Found conflict (main program)!")		# DEBUG
 
 i = 0
 for sched in schedule_list:
@@ -385,7 +406,4 @@ for sched in schedule_list:
 
    for sect in sched:
       sect.display()
-      sdt_dict = make_dt_dict(sect)
-      for day in sdt_dict:
-         print("  {}".format(day))
 
