@@ -298,29 +298,19 @@ with open(filetot) as csvfile:
 for i in range(0,len(all_clists)):
   del all_clists[i][0]
 
-#   Now go through the list of sections and add additional courses to course_list
-#    as needed. Individual sections will be stored as CourseSect objects within 
-#    the "allsect" list of each course object.
+# Initialize the sect_mask list and a list of all course sections
+#  (in the order that they appear in the original .csv file.)
+#  The sect_mask list stores a "1" if the given section has been 
+#  identified as an existing course or a new course
 
-course_list = []
-ncourse = 0 
+sect_mask = []
+sect_list = []
 
 for id in range (0,len(cids)):
-  if (id == 0):
-    new_course = Course()
-    course_list.append(new_course)
-  else: 
-    if (cnums[id] != cnums[id-1]) or (csubs[id] != csubs[id-1]):
-      ncourse += 1
-      new_course = Course()
-      course_list.append(new_course)
-  course_sect = CourseSect()
-  course_list[ncourse].subject = csubs[id]
-  course_list[ncourse].coursenum = cnums[id]
-  course_list[ncourse].title = ctitles[id]
-  course_list[ncourse].crhr = ccrhr[id]
-  course_list[ncourse].allsect.append(course_sect)
 
+  sect_mask.append(0)
+
+  course_sect = CourseSect()
   course_sect.subject = csubs[id]
   course_sect.coursenum = cnums[id]
   course_sect.courseid = cids[id]
@@ -331,9 +321,36 @@ for id in range (0,len(cids)):
   course_sect.days = cdays[id].split('\n')
   course_sect.times = ctimes[id].split('\n')
   course_sect.instructors = cinstrucs[id].split('\n')
-  
   course_sect.dtdict = make_dt_dict(course_sect)
 
+  sect_list.append(course_sect)
+
+# Now go through the list of sections and add additional courses to course_list
+#  as needed. Individual sections will be stored as CourseSect objects within 
+#  the "allsect" list of each course object.
+
+course_list = []
+
+for id in range (0,len(cids)):
+
+  if (sect_mask[id] == 0):
+    new_course = Course()
+    new_course.subject = csubs[id]
+    new_course.coursenum = cnums[id]
+    new_course.title = ctitles[id]
+    new_course.crhr = ccrhr[id]
+    new_course.allsect.append(sect_list[id])
+    course_list.append(new_course)
+    sect_mask[id] = 1
+
+    for j in range(0,len(cids)):
+
+      if (j != id) and (sect_mask[j] == 0):
+        if (csubs[id] == csubs[j]) and (cnums[id] == cnums[j]):
+          new_course.allsect.append(sect_list[j])
+          sect_mask[j] = 1
+
+  
 # Sort the courses by number of sections. 
 
 SortCourses(course_list)
@@ -397,6 +414,14 @@ for i in range(1,len(course_list)):
                print("Error in main program: length of schedule list = ",lslistj)
 #        else:							# DEBUG
 #           print("Found conflict (main program)!")		# DEBUG
+
+# Throw an error message if no plausible schedules are found:
+
+if (len(schedule_list) == 1) and (len(schedule_list[0]) < len(course_list)):
+   print("No plausible set of schedules found for this set of courses.")
+   sys.exit()
+
+# Print out any plausible schedules:
 
 i = 0
 for sched in schedule_list:
