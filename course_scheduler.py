@@ -383,25 +383,34 @@ for i in range(1,len(course_list)):
 
    len_slist = len(schedule_list)
 
-   for j in range(0, len_slist):
+   for sect in course_list[i].allsect:
+   
+      badsched = []				# BADSCHED
 
-      for sect in course_list[i].allsect:
+      for j in range(0,len_slist):
 
          conflict = 0
+         tempsched = []
          
          lslistj = len(schedule_list[j])
 
+#        print("Testing course i={} {}{}-{} with schedule j={} which has length {}".format(i,course_list[i].subject,course_list[i].coursenum,sect.courseid,j,lslistj)) 		# DEBUG
+
+#        for k in range(0,lslistj):			 # DEBUG
+#           print("   {}{}-{} ".format(schedule_list[j][k].subject,schedule_list[j][k].coursenum,schedule_list[j][k].courseid))							# DEBUG
+
          if lslistj == i + 1:
-            tempsched = []
             for k in range(0,lslistj-1):
               tempsched.append(schedule_list[j][k])
+            conflict = check_schedule(tempsched,sect)
          elif lslistj == i:
             tempsched = schedule_list[j]
-         else:
-            print("error: length of schedule = ",lslistj)
+            conflict = check_schedule(tempsched,sect)
+         else:	
+#           print("error: i = {}, j = {}, length of schedule = {}".format(i,j,lslistj))	# DEBUG
+            badsched.append(j)					# BADSCHED
+            conflict = 1
 
-         conflict = check_schedule(tempsched,sect)
-    
          if conflict == 0:
             if lslistj == i + 1:
                newsched = copy.deepcopy(schedule_list[j])
@@ -410,14 +419,14 @@ for i in range(1,len(course_list)):
                schedule_list.append(newsched)
             elif lslistj == i:
                schedule_list[j].append(sect)
-            else:
-               print("Error in main program: length of schedule list = ",lslistj)
-#        else:							# DEBUG
-#           print("Found conflict (main program)!")		# DEBUG
+
+   for b in badsched:				# BADSCHED
+      del schedule_list[b]			# BADSCHED
+#     print("Deleted bad schedule",b)		# BADSCHED  # DEBUG
 
 # Throw an error message if no plausible schedules are found:
 
-if (len(schedule_list) == 1) and (len(schedule_list[0]) < len(course_list)):
+if (len(schedule_list) == 0 ):
    print("No plausible set of schedules found for this set of courses.")
    sys.exit()
 
@@ -427,8 +436,11 @@ i = 0
 for sched in schedule_list:
 
    i += 1
-   print("NEW SCHEDULE:",i)
+   print("NEW SCHEDULE: {}".format(i))
 
    for sect in sched:
       sect.display()
+
+   print("")
+
 
