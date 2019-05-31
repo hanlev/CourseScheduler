@@ -255,6 +255,72 @@ def check_schedule(sched,sect):
 
    return conflict
 
+def make_html_weekday_header(i):
+
+   print("<h3>Schedule #{}</h3>".format(i))
+   print("")
+
+   print('''
+<svg width="700" height="1510"> 
+
+   <rect x="0" y="0" rx="10" ry="10" width="100" height="30" style="fill: blue; stroke: black; stroke-width: 1; opacity: 0.2;"></rect> 
+   <rect x="100" y="0" rx="10" ry="10" width="100" height="30" style="fill: blue; stroke: black; stroke-width: 1; opacity: 0.2;"></rect> 
+   <rect x="200" y="0" rx="10" ry="10" width="100" height="30" style="fill: blue; stroke: black; stroke-width: 1; opacity: 0.2;"></rect> 
+   <rect x="300" y="0" rx="10" ry="10" width="100" height="30" style="fill: blue; stroke: black; stroke-width: 1; opacity: 0.2;"></rect> 
+   <rect x="400" y="0" rx="10" ry="10" width="100" height="30" style="fill: blue; stroke: black; stroke-width: 1; opacity: 0.2;"></rect> 
+   <rect x="500" y="0" rx="10" ry="10" width="100" height="30" style="fill: blue; stroke: black; stroke-width: 1; opacity: 0.2;"></rect> 
+   <rect x="600" y="0" rx="10" ry="10" width="100" height="30" style="fill: blue; stroke: black; stroke-width: 1; opacity: 0.2;"></rect> 
+
+   <text x="25" y="20" fill="black">Sunday</text> 
+   <text x="120" y="20" fill="black">Monday</text> 
+   <text x="220" y="20" fill="black">Tuesday</text> 
+   <text x="310" y="20" fill="black">Wednesday</text> 
+   <text x="420" y="20" fill="black">Thursday</text> 
+   <text x="525" y="20" fill="black">Friday</text> 
+   <text x="620" y="20" fill="black">Saturday</text> 
+
+   ''')
+
+def pr_html_sect(sect):
+
+  # This function prints out html svg code for depictions of where
+  #  a given section appears within a schedule.
+
+   orig_ypx = 30    # this is the pixel height devoted to the weekday header in html svg schedule
+   day_xpx  = 100   # this is the pixel width devoted to one weekday in the html svg schedule
+   hour_ypx = 100   # this is the pixel height devoted to 1 hour of time on schedule
+   rpx = 10         # this is the pixel amount by which each rectangle corner is "rounded"
+   text_indent = 5  # this is the pixel amount by which the text is indented inside of a section rectangle
+   text_down = 10   # this is the pixel amount by which the text appears below the top of a section rectangle
+
+   rect_xval = {"M":day_xpx, "T":(day_xpx*2), "W":(day_xpx*3), "Th":(day_xpx*4), "F":(day_xpx*5)}
+
+   for day in sect.dtdict:
+
+      rect_x = rect_xval[day]
+#     print(day,rect_x)			# DEBUG PR
+ 
+      for timerange in sect.dtdict[day]:
+
+#        print(timerange)              # DEBUG PR
+ 
+         tlist = split_time(timerange)
+         rect_yi = (tlist[0]-420)*(hour_ypx/60) + orig_ypx     # 420 min = 7:00am -- we start the schedule at 7:00am
+         yh = (tlist[1] - tlist[0])*(hour_ypx/60)
+         txt_x = rect_x + text_indent
+         txt_y = rect_yi + text_down
+
+#        print("yh = {}".format(yh))  # DEBUG PR
+         
+         print('''
+   <rect x="{}" y="{}" rx="{}" ry="{}" width="{}" height="{}" style="fill: blue; stroke: black; stroke-width: 1; opacity: 0.2;"></rect>
+'''.format(rect_x,rect_yi,rpx,rpx,day_xpx,yh))
+
+         print('''
+   <text x="{}" y="{}" fill="black">{} {}-{}</text>
+   <text x="{}" y="{}" fill="black">{}</text>
+'''.format(txt_x,txt_y,sect.subject,sect.coursenum,sect.section,txt_x,txt_y+30,timerange))
+
 # ------------------ START MAIN PROGRAM ----------------------------- # 
 # Read in the .csv file containing course information
 # Note: this script assumes that the .csv file has a header row, and 
@@ -432,15 +498,21 @@ if (len(schedule_list) == 0 ):
 
 # Print out any plausible schedules:
 
+#xxx Print html header <!DOCUMENT> etc.
+
 i = 0
 for sched in schedule_list:
 
    i += 1
-   print("NEW SCHEDULE: {}".format(i))
+#  print("NEW SCHEDULE: {}".format(i))
+   make_html_weekday_header(i)
 
    for sect in sched:
-      sect.display()
+#     sect.display()
+      pr_html_sect(sect)
 
+   print("  Sorry, your browser does not support in-line svg")
+   print("</svg>")
    print("")
 
 
