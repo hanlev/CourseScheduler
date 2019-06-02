@@ -143,23 +143,6 @@ def time_to_min(timestring):
 
   return nminute
      
-def split_time(mtimerange):
-
-  # This function takes a "messy" string time range (mtimerange) in the form
-  #  "11:30am-12:30pm" and splits it into a start time (integer, in minutes) 
-  #   and end time (integer, in minutes). It returns a 2-member integer list 
-  #   where the first number is the start time and the second number is the 
-  #   end time.
-
-  tlist = []
-
-  stimelist = mtimerange.split('-')
-# print("in split_time stimelist = ",stimelist)    # DEBUG
-  tlist.append(time_to_min(stimelist[0]))
-  tlist.append(time_to_min(stimelist[1]))
-
-  return tlist
-
 def clean_time_range(mtimerange):
 
   # This function takes a "messy" string time range (mtimerange) that
@@ -209,7 +192,8 @@ def compare_sect(secta,sectb):
 def compare_times(stimesa, stimesb):
 
    # The arguments timesa and timesb must be string lists of time 
-   #  ranges. Returns conflict = 0 if there is no overlap between
+   #  ranges (e.g. ["10:00am-10:50am","3:00pm-4:20pm"]. 
+   #  Returns conflict = 0 if there is no overlap between
    #  time ranges. Returns conflict = 1 if there is an overlap
    #  time ranges.
 
@@ -220,14 +204,18 @@ def compare_times(stimesa, stimesb):
     while (i < len(stimesa)) and (conflict == 0):
        j = 0
        while (j < len(stimesb)) and (conflict == 0):
-          timerange_a = split_time(stimesa[i])
-          timerange_b = split_time(stimesb[j])
+          timerange_a = stimesa[i].split("-")
+          timerange_b = stimesb[j].split("-")
+          time_a0 = time_to_min(timerange_a[0])
+          time_a1 = time_to_min(timerange_a[1])
+          time_b0 = time_to_min(timerange_b[0])
+          time_b1 = time_to_min(timerange_b[1])
 #         print("In compare_times",timerange_a,timerange_b)    # DEBUG
-          if timerange_a[0] < timerange_b[0]:
-              if timerange_b[0] < timerange_a[1]:
+          if time_a0 < time_b0:
+              if time_b0 < time_a1:
                   conflict = 1
           else:
-              if timerange_a[0] < timerange_b[1]:
+              if time_a0 < time_b1:
                   conflict = 1
           j += 1
        i += 1
@@ -255,45 +243,66 @@ def check_schedule(sched,sect):
 
    return conflict
 
+def min_to_time(minute):
+
+   # This function takes a time in minutes (e.g. 740) and converts it into a human-readable time,
+   #   the string "12:20pm".
+
+   if (minute >= 0) and (minute < 60):
+     hour = int(12)
+     ampm = "am"
+   elif (minute >= 60) and (minute <720):
+     hour = int(minute/60)
+     ampm = "am"
+   elif (minute >= 720) and (minute < 780):
+     hour = int(minute/60)
+     ampm = "pm"
+   elif (minute >= 780) and (minute < 1440):
+     minute = minute - 720
+     hour = int(minute/60)
+     ampm = "pm"
+   else:
+      print("{} is an invalid number of minutes in the day".format(minute))
+
+   min = str(minute % 60)
+
+   if ((minute % 60) < 10):
+      min = "0" + min
+      
+   time = str(hour) + ":" + min + ampm
+   return(time)
+
+
 def make_html_weekday_header(i):
+
+   xwidth_tot = 8*day_xpx
+   yheight_tot = orig_ypx + 15*hour_ypx     # The schedule ranges a total of 15 hours, from 7am to 10pm
+   daylist = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 
    print("<h3>Schedule #{}</h3>".format(i))
    print("")
 
-   print('''
-<svg width="700" height="1510"> 
+   print("<svg width=\"{}\" height=\"{}\">".format(xwidth_tot,yheight_tot))
 
-   <rect x="0" y="0" rx="10" ry="10" width="100" height="30" style="fill: blue; stroke: black; stroke-width: 1; opacity: 0.2;"></rect> 
-   <rect x="100" y="0" rx="10" ry="10" width="100" height="30" style="fill: blue; stroke: black; stroke-width: 1; opacity: 0.2;"></rect> 
-   <rect x="200" y="0" rx="10" ry="10" width="100" height="30" style="fill: blue; stroke: black; stroke-width: 1; opacity: 0.2;"></rect> 
-   <rect x="300" y="0" rx="10" ry="10" width="100" height="30" style="fill: blue; stroke: black; stroke-width: 1; opacity: 0.2;"></rect> 
-   <rect x="400" y="0" rx="10" ry="10" width="100" height="30" style="fill: blue; stroke: black; stroke-width: 1; opacity: 0.2;"></rect> 
-   <rect x="500" y="0" rx="10" ry="10" width="100" height="30" style="fill: blue; stroke: black; stroke-width: 1; opacity: 0.2;"></rect> 
-   <rect x="600" y="0" rx="10" ry="10" width="100" height="30" style="fill: blue; stroke: black; stroke-width: 1; opacity: 0.2;"></rect> 
+   for i in range(0,len(daylist)):
+      day_xloc = (i+1)*day_xpx
+      print('''  <rect x="{}" y="0" rx="{}" ry="{}" width="{}" height="{}" style="fill: blue; stroke: black; stroke-width: 1; opacity: 0.2;"></rect> '''.format(day_xloc,rpx,rpx,day_xpx,orig_ypx))
+      print('''  <text x="{}" y="{}" fill="black">{}</text> '''.format(text_indent+day_xloc,text_down,daylist[i]))
 
-   <text x="25" y="20" fill="black">Sunday</text> 
-   <text x="120" y="20" fill="black">Monday</text> 
-   <text x="220" y="20" fill="black">Tuesday</text> 
-   <text x="310" y="20" fill="black">Wednesday</text> 
-   <text x="420" y="20" fill="black">Thursday</text> 
-   <text x="525" y="20" fill="black">Friday</text> 
-   <text x="620" y="20" fill="black">Saturday</text> 
+   for imin in range(sched_start_min,sched_end_min,60):
+      st_time = min_to_time(imin)
+      yrect = (imin - sched_start_min) * hour_ypx/60 + orig_ypx
+#     print(imin,st_time,yrect) 			# DEBUG
+      print('''  <rect x="0" y="{}" rx="{}" ry="{}" width="{}" height="{}" style="fill: blue; stroke: black; stroke-width: 1; opacity: 0.2;"></rect> '''.format(yrect,rpx,rpx,day_xpx,hour_ypx))
+      print('''  <text x="{}" y="{}" fill="black">{}</text> '''.format(text_indent,yrect+text_down,st_time))
 
-   ''')
 
-def pr_html_sect(sect):
+def pr_html_sect(sect,color):
 
   # This function prints out html svg code for depictions of where
   #  a given section appears within a schedule.
 
-   orig_ypx = 30    # this is the pixel height devoted to the weekday header in html svg schedule
-   day_xpx  = 100   # this is the pixel width devoted to one weekday in the html svg schedule
-   hour_ypx = 100   # this is the pixel height devoted to 1 hour of time on schedule
-   rpx = 10         # this is the pixel amount by which each rectangle corner is "rounded"
-   text_indent = 5  # this is the pixel amount by which the text is indented inside of a section rectangle
-   text_down = 10   # this is the pixel amount by which the text appears below the top of a section rectangle
-
-   rect_xval = {"M":day_xpx, "T":(day_xpx*2), "W":(day_xpx*3), "Th":(day_xpx*4), "F":(day_xpx*5)}
+   rect_xval = {"M":(day_xpx*2), "T":(day_xpx*3), "W":(day_xpx*4), "Th":(day_xpx*5), "F":(day_xpx*6)}
 
    for day in sect.dtdict:
 
@@ -304,24 +313,44 @@ def pr_html_sect(sect):
 
 #        print(timerange)              # DEBUG PR
  
-         tlist = split_time(timerange)
-         rect_yi = (tlist[0]-420)*(hour_ypx/60) + orig_ypx     # 420 min = 7:00am -- we start the schedule at 7:00am
-         yh = (tlist[1] - tlist[0])*(hour_ypx/60)
+         stlist = timerange.split('-')
+         time0 = time_to_min(stlist[0])
+         time1 = time_to_min(stlist[1])
+         rect_yi = (time0 - sched_start_min) * hour_ypx / 60 + orig_ypx  
+         yh = (time1 - time0) * hour_ypx / 60
          txt_x = rect_x + text_indent
          txt_y = rect_yi + text_down
 
-#        print("yh = {}".format(yh))  # DEBUG PR
+#        print("time0 = {} time1 = {} yh = {} hour_ypx = {}".format(time0,time1,yh,hour_ypx))  # DEBUG PR
          
          print('''
-   <rect x="{}" y="{}" rx="{}" ry="{}" width="{}" height="{}" style="fill: blue; stroke: black; stroke-width: 1; opacity: 0.2;"></rect>
-'''.format(rect_x,rect_yi,rpx,rpx,day_xpx,yh))
+   <rect x="{}" y="{}" rx="{}" ry="{}" width="{}" height="{}" style="fill: {}; stroke: black; stroke-width: 1; opacity: 0.2;"></rect>
+'''.format(rect_x,rect_yi,rpx,rpx,day_xpx,yh,color))
 
          print('''
    <text x="{}" y="{}" fill="black">{} {}-{}</text>
-   <text x="{}" y="{}" fill="black">{}</text>
-'''.format(txt_x,txt_y,sect.subject,sect.coursenum,sect.section,txt_x,txt_y+30,timerange))
+'''.format(txt_x,txt_y,sect.subject,sect.coursenum,sect.section,txt_x,txt_y+13,stlist[0],txt_x,txt_y+26,stlist[1]))
+
+#         print('''
+#   <text x="{}" y="{}" fill="black">{} {}-{}</text>
+#   <text x="{}" y="{}" fill="black">{}-</text>
+#   <text x="{}" y="{}" fill="black"> {}</text>
+#'''.format(txt_x,txt_y,sect.subject,sect.coursenum,sect.section,txt_x,txt_y+13,stlist[0],txt_x,txt_y+26,stlist[1]))
 
 # ------------------ START MAIN PROGRAM ----------------------------- # 
+
+# Set the global variables that define how the HTML SVG schedule will look
+
+orig_ypx = 30    # this is the pixel height devoted to the weekday header in html svg schedule
+day_xpx  = 100   # this is the pixel width devoted to one weekday in the html svg schedule
+hour_ypx = 30   # this is the pixel height devoted to 1 hour of time on schedule
+rpx = 10         # this is the pixel amount by which each rectangle corner is "rounded"
+text_indent = 5  # this is the pixel amount by which the text is indented inside of a section rectangle
+text_down = 20   # this is the pixel amount by which the text appears below the top of a section rectangle
+sched_start_min = 420    # This is the first time shown on the schedule expressed in minutes (e.g. 420 = 7:00am)
+sched_end_min   = 1320   # This is the last time shown on the schedule expressed in minutes (e.g. 1320 = 10:00pm)
+color_list = ["red","orange","yellow","green","blue","purple"]
+
 # Read in the .csv file containing course information
 # Note: this script assumes that the .csv file has a header row, and 
 #       ultimately deletes the information stored in the header row.
@@ -507,9 +536,12 @@ for sched in schedule_list:
 #  print("NEW SCHEDULE: {}".format(i))
    make_html_weekday_header(i)
 
+   j = 0
    for sect in sched:
 #     sect.display()
-      pr_html_sect(sect)
+      color = color_list[j]
+      pr_html_sect(sect,color)
+      j += 1
 
    print("  Sorry, your browser does not support in-line svg")
    print("</svg>")
