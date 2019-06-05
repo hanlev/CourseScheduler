@@ -286,18 +286,18 @@ def make_html_weekday_header(i):
 
    for i in range(0,len(daylist)):
       day_xloc = (i+1)*day_xpx
-      print('''  <rect x="{}" y="0" rx="{}" ry="{}" width="{}" height="{}" style="fill: blue; stroke: black; stroke-width: 1; opacity: 0.2;"></rect> '''.format(day_xloc,rpx,rpx,day_xpx,orig_ypx))
+      print('''  <rect x="{}" y="0" rx="{}" ry="{}" width="{}" height="{}" style="fill: blue; stroke: black; stroke-width: 1; opacity: 0.3;"></rect> '''.format(day_xloc,rpx,rpx,day_xpx,orig_ypx))
       print('''  <text x="{}" y="{}" fill="black">{}</text> '''.format(text_indent+day_xloc,text_down,daylist[i]))
 
    for imin in range(sched_start_min,sched_end_min,60):
       st_time = min_to_time(imin)
       yrect = (imin - sched_start_min) * hour_ypx/60 + orig_ypx
 #     print(imin,st_time,yrect) 			# DEBUG
-      print('''  <rect x="0" y="{}" rx="{}" ry="{}" width="{}" height="{}" style="fill: blue; stroke: black; stroke-width: 1; opacity: 0.2;"></rect> '''.format(yrect,rpx,rpx,day_xpx,hour_ypx))
+      print('''  <rect x="0" y="{}" rx="{}" ry="{}" width="{}" height="{}" style="fill: blue; stroke: black; stroke-width: 1; opacity: 0.3;"></rect> '''.format(yrect,rpx,rpx,day_xpx,hour_ypx))
       print('''  <text x="{}" y="{}" fill="black">{}</text> '''.format(text_indent,yrect+text_down,st_time))
 
 
-def pr_html_sect(sect,color):
+def pr_html_sect(sect,color,opac):
 
   # This function prints out html svg code for depictions of where
   #  a given section appears within a schedule.
@@ -324,8 +324,8 @@ def pr_html_sect(sect,color):
 #        print("time0 = {} time1 = {} yh = {} hour_ypx = {}".format(time0,time1,yh,hour_ypx))  # DEBUG PR
          
          print('''
-   <rect x="{}" y="{}" rx="{}" ry="{}" width="{}" height="{}" style="fill: {}; stroke: black; stroke-width: 1; opacity: 0.2;"></rect>
-'''.format(rect_x,rect_yi,rpx,rpx,day_xpx,yh,color))
+   <rect x="{}" y="{}" rx="{}" ry="{}" width="{}" height="{}" style="fill: {}; stroke: black; stroke-width: 1; opacity: {};"></rect>
+'''.format(rect_x,rect_yi,rpx,rpx,day_xpx,yh,color,opac))
 
          print('''
    <text x="{}" y="{}" fill="black">{} {}-{}</text>
@@ -349,7 +349,8 @@ text_indent = 5  # this is the pixel amount by which the text is indented inside
 text_down = 20   # this is the pixel amount by which the text appears below the top of a section rectangle
 sched_start_min = 420    # This is the first time shown on the schedule expressed in minutes (e.g. 420 = 7:00am)
 sched_end_min   = 1320   # This is the last time shown on the schedule expressed in minutes (e.g. 1320 = 10:00pm)
-color_list = ["red","orange","yellow","green","blue","purple"]
+color_list = ["red","green","yellow","purple","orange","blue"]
+opac_list = [0.3, 0.3, 0.4, 0.3, 0.4, 0.4]
 
 # Read in the .csv file containing course information
 # Note: this script assumes that the .csv file has a header row, and 
@@ -540,7 +541,8 @@ for sched in schedule_list:
    for sect in sched:
 #     sect.display()
       color = color_list[j]
-      pr_html_sect(sect,color)
+      opac = opac_list[j]
+      pr_html_sect(sect,color,opac)
       j += 1
 
    print("  Sorry, your browser does not support in-line svg")
