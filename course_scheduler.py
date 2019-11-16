@@ -477,48 +477,47 @@ for i in range(0,len(course_list[0].allsect)):
 
 for i in range(1,len(course_list)):
 
-   len_slist = len(schedule_list)
+   len_slist = len(schedule_list)        # DEBUG
 
    for sect in course_list[i].allsect:
    
-      badsched = []				# BADSCHED
+#     badsched = []				# BADSCHED
 
       for j in range(0,len_slist):
 
          conflict = 0
          tempsched = []
          
-         lslistj = len(schedule_list[j])
+         lslistj = len(schedule_list[j]) 
 
-#        print("Testing course i={} {}{}-{} with schedule j={} which has length {}".format(i,course_list[i].subject,course_list[i].coursenum,sect.courseid,j,lslistj)) 		# DEBUG
+         print("Testing course i={} {}{}-{}-{} with schedule j={} which has length {}".format(i,course_list[i].subject,course_list[i].coursenum,sect.section,sect.courseid,j,lslistj)) 		# DEBUG
 
-#        for k in range(0,lslistj):			 # DEBUG
-#           print("   {}{}-{} ".format(schedule_list[j][k].subject,schedule_list[j][k].coursenum,schedule_list[j][k].courseid))							# DEBUG
+         for k in range(0,lslistj):			 # DEBUG  
+            print("   {}{}-{}-{} ".format(schedule_list[j][k].subject,schedule_list[j][k].coursenum,schedule_list[j][k].section,schedule_list[j][k].courseid))							# DEBUG
 
-         if lslistj == i + 1:
+         if lslistj == i + 1:	
             for k in range(0,lslistj-1):
               tempsched.append(schedule_list[j][k])
             conflict = check_schedule(tempsched,sect)
+            if conflict == 0:
+               tempsched.append(sect)
+               schedule_list.append(tempsched)
+            else:
+               print("Conflict found")
          elif lslistj == i:
             tempsched = schedule_list[j]
             conflict = check_schedule(tempsched,sect)
-         else:	
-#           print("error: i = {}, j = {}, length of schedule = {}".format(i,j,lslistj))	# DEBUG
-            badsched.append(j)					# BADSCHED
-            conflict = 1
-
-         if conflict == 0:
-            if lslistj == i + 1:
-               newsched = copy.deepcopy(schedule_list[j])
-               newsched.pop(lslistj-1)
-               newsched.append(sect)
-               schedule_list.append(newsched)
-            elif lslistj == i:
+            if conflict == 0:
                schedule_list[j].append(sect)
+            else:
+               print("Conflict found")
+         else:	
+            print("error: i = {}, j = {}, length of schedule = {}".format(i,j,lslistj))	# DEBUG
+#           badsched.append(j)					# BADSCHED
 
-   for b in badsched:				# BADSCHED
-      del schedule_list[b]			# BADSCHED
-#     print("Deleted bad schedule",b)		# BADSCHED  # DEBUG
+#     for b in range(0,len(badsched)):				# BADSCHED
+#        del schedule_list[b]			# BADSCHED
+#        print("Deleted bad schedule",b)		# BADSCHED  # DEBUG
 
 # Throw an error message if no plausible schedules are found:
 
@@ -533,20 +532,20 @@ if (len(schedule_list) == 0 ):
 i = 0
 for sched in schedule_list:
 
-   i += 1
-#  print("NEW SCHEDULE: {}".format(i))
-   make_html_weekday_header(i)
+   if len(sched) == len(course_list):
+      i += 1
+      make_html_weekday_header(i)
 
-   j = 0
-   for sect in sched:
-#     sect.display()
-      color = color_list[j]
-      opac = opac_list[j]
-      pr_html_sect(sect,color,opac)
-      j += 1
+      j = 0
+      for sect in sched:
+#        sect.display()
+         color = color_list[j]
+         opac = opac_list[j]
+         pr_html_sect(sect,color,opac)
+         j += 1
 
-   print("  Sorry, your browser does not support in-line svg")
-   print("</svg>")
-   print("")
+      print("  Sorry, your browser does not support in-line svg")
+      print("</svg>")
+      print("")
 
 
