@@ -477,12 +477,10 @@ for i in range(0,len(course_list[0].allsect)):
 
 for i in range(1,len(course_list)):
 
-   len_slist = len(schedule_list)        # DEBUG
+   len_slist = len(schedule_list)        
 
    for sect in course_list[i].allsect:
    
-#     badsched = []				# BADSCHED
-
       for j in range(0,len_slist):
 
          conflict = 0
@@ -490,10 +488,10 @@ for i in range(1,len(course_list)):
          
          lslistj = len(schedule_list[j]) 
 
-         print("Testing course i={} {}{}-{}-{} with schedule j={} which has length {}".format(i,course_list[i].subject,course_list[i].coursenum,sect.section,sect.courseid,j,lslistj)) 		# DEBUG
+#        print("Testing course i={} {}{}-{}-{} with schedule j={} which has length {}".format(i,course_list[i].subject,course_list[i].coursenum,sect.section,sect.courseid,j,lslistj)) 		# DEBUG
 
-         for k in range(0,lslistj):			 # DEBUG  
-            print("   {}{}-{}-{} ".format(schedule_list[j][k].subject,schedule_list[j][k].coursenum,schedule_list[j][k].section,schedule_list[j][k].courseid))							# DEBUG
+#        for k in range(0,lslistj):			 # DEBUG  
+#           print("   {}{}-{}-{} ".format(schedule_list[j][k].subject,schedule_list[j][k].coursenum,schedule_list[j][k].section,schedule_list[j][k].courseid))							# DEBUG
 
          if lslistj == i + 1:	
             for k in range(0,lslistj-1):
@@ -502,22 +500,13 @@ for i in range(1,len(course_list)):
             if conflict == 0:
                tempsched.append(sect)
                schedule_list.append(tempsched)
-            else:
-               print("Conflict found")
          elif lslistj == i:
             tempsched = schedule_list[j]
             conflict = check_schedule(tempsched,sect)
             if conflict == 0:
                schedule_list[j].append(sect)
-            else:
-               print("Conflict found")
          else:	
             print("error: i = {}, j = {}, length of schedule = {}".format(i,j,lslistj))	# DEBUG
-#           badsched.append(j)					# BADSCHED
-
-#     for b in range(0,len(badsched)):				# BADSCHED
-#        del schedule_list[b]			# BADSCHED
-#        print("Deleted bad schedule",b)		# BADSCHED  # DEBUG
 
 # Throw an error message if no plausible schedules are found:
 
@@ -526,8 +515,6 @@ if (len(schedule_list) == 0 ):
    sys.exit()
 
 # Print out any plausible schedules:
-
-#xxx Print html header <!DOCUMENT> etc.
 
 i = 0
 for sched in schedule_list:
@@ -538,7 +525,6 @@ for sched in schedule_list:
 
       j = 0
       for sect in sched:
-#        sect.display()
          color = color_list[j]
          opac = opac_list[j]
          pr_html_sect(sect,color,opac)
