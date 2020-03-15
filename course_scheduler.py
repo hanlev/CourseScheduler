@@ -3,7 +3,11 @@
 import sys
 import csv
 import re
+import os
 import copy
+import requests
+from bs4 import BeautifulSoup
+
 
 class CourseSect(object):
   def __init__(self): 
@@ -33,6 +37,48 @@ class Course(object):
   def display(self):
     print("{} {}: {}".format(self.subject,self.coursenum,self.title))
 
+def get_course_sections(response):
+
+    # Returns a list of CourseSection objects from the html of
+    #  a WSU eServices search result for a given course.
+
+    new_sect_list = []
+
+    soup = BeautifulSoup(response.content, 'html.parser')
+
+    course_html_table = soup.find(id="resultsTable")
+    course_tbody = course_html_table.find('tbody')
+    course_rows = course_tbody.find_all('tr')
+
+    for row in course_rows:
+        cell = row.find_all('td')
+        course_sect = CourseSect()
+        course_sect.subject = cell[2].get_text().strip()
+        course_sect.coursenum = cell[3].get_text().strip()
+        course_sect.courseid = cell[1].get_text().strip()
+        course_sect.section = cell[4].get_text().strip()
+        course_sect.status = cell[9].get_text()
+        course_sect.delmeth = cell[12].get_text()
+        course_sect.dates = cell[6].get_text()
+
+        for div in cell[7].find_all('div'):
+            course_sect.days.append(div.get_text().strip())
+
+        for div in cell[8].find_all('div'):
+            course_sect.times.append(div.get_text().strip())
+
+        for div in cell[11].find_all('div'):
+            course_sect.instructors.append(div.get_text().strip())
+
+        course_sect.dtdict = make_dt_dict(course_sect)
+
+#       course_sect.display()    # DEBUG
+
+        new_sect_list.append(course_sect)
+
+    return new_sect_list
+
+
 def SortCourses(ListOfCourses): 
 
     # Use the Bubble Sort method to rearrange the list of courses. 
@@ -45,7 +91,7 @@ def SortCourses(ListOfCourses):
             lenc2 = len(ListOfCourses[j+1].allsect)
             if lenc1 > lenc2 : 
                 ListOfCourses[j], ListOfCourses[j+1] = ListOfCourses[j+1], ListOfCourses[j]
- 
+
 def make_dt_dict(sect):
 
    # This function returns a dictionary that links a day (M, T, W, Th, or F) to a
@@ -71,7 +117,7 @@ def make_dt_dict(sect):
       lastday = len(sect.days)
 
    for i in range(0,lastday):
-      tdlist = sect.days[i].split(' ')
+      tdlist = sect.days[i].split('\n')
       for j in range(0,len(tdlist)):
           daylist.append(tdlist[j])
           clean_times = clean_time_range(sect.times[i])
@@ -153,8 +199,6 @@ def clean_time_range(mtimerange):
   tstring = ""
   tlist = []
 
-  mtimerange = mtimerange.decode('utf-8')
-
   stimelist = mtimerange.split(u'\xa0-\xa0')
   tlist.append(stimelist[0])
   tlist.append(stimelist[1])
@@ -191,8 +235,8 @@ def compare_sect(secta,sectb):
 
 def compare_times(stimesa, stimesb):
 
-   # The arguments timesa and timesb must be string lists of time 
-   #  ranges (e.g. ["10:00am-10:50am","3:00pm-4:20pm"]. 
+   # The arguments stimesa and stimesb must be string lists of time 
+   #  ranges (e.g. ["10:00am-10:50am","3:00pm-4:20pm"]). 
    #  Returns conflict = 0 if there is no overlap between
    #  time ranges. Returns conflict = 1 if there is an overlap
    #  time ranges.
@@ -331,12 +375,6 @@ def pr_html_sect(sect,color,opac):
    <text x="{}" y="{}" fill="black">{} {}-{}</text>
 '''.format(txt_x,txt_y,sect.subject,sect.coursenum,sect.section,txt_x,txt_y+13,stlist[0],txt_x,txt_y+26,stlist[1]))
 
-#         print('''
-#   <text x="{}" y="{}" fill="black">{} {}-{}</text>
-#   <text x="{}" y="{}" fill="black">{}-</text>
-#   <text x="{}" y="{}" fill="black"> {}</text>
-#'''.format(txt_x,txt_y,sect.subject,sect.coursenum,sect.section,txt_x,txt_y+13,stlist[0],txt_x,txt_y+26,stlist[1]))
-
 # ------------------ START MAIN PROGRAM ----------------------------- # 
 
 # Set the global variables that define how the HTML SVG schedule will look
@@ -357,96 +395,47 @@ opac_list = [0.3, 0.3, 0.4, 0.3, 0.4, 0.4]
 #       ultimately deletes the information stored in the header row.
 
 try:
-  filepath="/Users/Hannah/Documents/Home/PythonPractice/CourseScheduler/"
-  filetot = filepath + str(sys.argv[1])
+  filepath = os.getcwd()
+  filetot = filepath + "\\" + str(sys.argv[1])
 except:
   print("Please enter the name of the .csv file containing course information.")
   sys.exit()
 
 print(filetot)
 
-  # Initialize variables that will be read from the .csv file and 
-  #   used to define course objects.
+# Read a .csv file containing the list of desired courses for a
+#  semester, e.g. CHEM,213 \n  BIOL,242 \n etc.
 
-cids = []
-csubs = []
-cnums = []
-csects = [] 
-ctitles = []
-cdates = []
-cdays = []
-ctimes = []
-ccrhr = []
-cstatus = []
-cinstrucs = []
-cdelmeths = []
-
-all_clists = [cids, csubs, cnums, csects, ctitles, cdates, cdays, ctimes, ccrhr, cstatus, cinstrucs, cdelmeths]
+course_list = []
 
 with open(filetot) as csvfile:
   course_raw_info = csv.reader(csvfile)
  
   for row in course_raw_info:
-    for i in range(0,len(all_clists)):
-      all_clists[i].append(row[i])
+      new_course = Course()
+      new_course.subject = row[0]
+      new_course.coursenum = row[1]
+      course_list.append(new_course)
 
-# Delete the header row from each list
-for i in range(0,len(all_clists)):
-  del all_clists[i][0]
+# For each course listed, get information from WSU's eServices
+#   site about the sections being offered
 
-# Initialize the sect_mask list and a list of all course sections
-#  (in the order that they appear in the original .csv file.)
-#  The sect_mask list stores a "1" if the given section has been 
-#  identified as an existing course or a new course
+# semester = str(20213)  # this stands for Fall 2021
+semester = str(20205)  # this stands for Spring 2020
 
-sect_mask = []
-sect_list = []
+url_pt01 = 'https://eservices.minnstate.edu/registration/search/advancedSubmit.html?campusid=074&searchrcid=0074&searchcampusid=074&yrtr=' + semester + '&subject='
+url_pt02 = '&courseNumber='
+url_pt03 = '&courseId=&openValue=ALL&delivery=ALL&showAdvanced=&starttime=&endtime=&mntransfer=&gened=&credittype=ALL&credits=&instructor=&keyword=&begindate=&site=&resultNumber=250'
 
-for id in range (0,len(cids)):
+for course in course_list:
+    course.display()
+    url_tot = url_pt01 + course.subject + url_pt02 + str(course.coursenum) + url_pt03
+    html_response = requests.get(url_tot)
+    if(html_response.status_code > 400):
+        print("There was an error opening the website for " + course.subject + " " + str(course.coursenum))
 
-  sect_mask.append(0)
+    course.allsect = get_course_sections(html_response)
 
-  course_sect = CourseSect()
-  course_sect.subject = csubs[id]
-  course_sect.coursenum = cnums[id]
-  course_sect.courseid = cids[id]
-  course_sect.section = csects[id]
-  course_sect.status = cstatus[id]
-  course_sect.delmeth = cdelmeths[id]
-  course_sect.dates = cdates[id].split('\n')
-  course_sect.days = cdays[id].split('\n')
-  course_sect.times = ctimes[id].split('\n')
-  course_sect.instructors = cinstrucs[id].split('\n')
-  course_sect.dtdict = make_dt_dict(course_sect)
-
-  sect_list.append(course_sect)
-
-# Now go through the list of sections and add additional courses to course_list
-#  as needed. Individual sections will be stored as CourseSect objects within 
-#  the "allsect" list of each course object.
-
-course_list = []
-
-for id in range (0,len(cids)):
-
-  if (sect_mask[id] == 0):
-    new_course = Course()
-    new_course.subject = csubs[id]
-    new_course.coursenum = cnums[id]
-    new_course.title = ctitles[id]
-    new_course.crhr = ccrhr[id]
-    new_course.allsect.append(sect_list[id])
-    course_list.append(new_course)
-    sect_mask[id] = 1
-
-    for j in range(0,len(cids)):
-
-      if (j != id) and (sect_mask[j] == 0):
-        if (csubs[id] == csubs[j]) and (cnums[id] == cnums[j]):
-          new_course.allsect.append(sect_list[j])
-          sect_mask[j] = 1
-
-  
 # Sort the courses by number of sections. 
 
 SortCourses(course_list)
